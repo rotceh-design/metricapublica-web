@@ -3,14 +3,15 @@
 import { useState } from "react";
 
 import { createMensajeContacto } from "@/lib/contacto";
+import { defaultInicioContenido } from "@/lib/contenido";
 import { InicioContenido } from "@/types/contenido";
 import { MensajeContactoFormData } from "@/types/mensaje";
 
 type ContactProps = {
-  contenido: InicioContenido;
+  contenido?: InicioContenido;
 };
 
-export default function Contact({ contenido }: ContactProps) {
+export default function Contact({ contenido = defaultInicioContenido }: ContactProps) {
   const [form, setForm] = useState<MensajeContactoFormData>({
     name: "",
     email: "",
