@@ -13,34 +13,54 @@ import {
   defaultInicioContenido,
   getInicioContenido,
 } from "@/lib/contenido";
+import { getActiveServicios } from "@/lib/servicios";
 import { InicioContenido } from "@/types/contenido";
+import { Servicio } from "@/types/servicio";
 
 export default function HomePage() {
   const [contenido, setContenido] = useState<InicioContenido>(
     defaultInicioContenido
   );
 
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [loadingServicios, setLoadingServicios] = useState(true);
+
   useEffect(() => {
-    const loadContenido = async () => {
+    const loadHomeData = async () => {
       try {
-        const data = await getInicioContenido();
-        setContenido(data);
+        const [contenidoData, serviciosData] = await Promise.all([
+          getInicioContenido(),
+          getActiveServicios(),
+        ]);
+
+        setContenido(contenidoData);
+        setServicios(serviciosData);
       } catch (error) {
-        console.error("Error cargando contenido de inicio:", error);
+        console.error("Error cargando contenido del home:", error);
+      } finally {
+        setLoadingServicios(false);
       }
     };
 
-    loadContenido();
+    loadHomeData();
   }, []);
 
   return (
     <main className="min-h-screen bg-[#0a1628] text-white">
       <Navbar />
+
       <Hero contenido={contenido} />
-      <Services contenido={contenido} />
+
+      <Services
+        contenido={contenido}
+        servicios={servicios}
+        loading={loadingServicios}
+      />
+
       <Studies contenido={contenido} />
       <Sectors contenido={contenido} />
       <Contact contenido={contenido} />
+
       <Footer />
     </main>
   );
