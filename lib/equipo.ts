@@ -13,11 +13,11 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
-import { Servicio, ServicioFormData } from "@/types/servicio";
+import { EquipoFormData, EquipoIntegrante } from "@/types/equipo";
 
-const serviciosRef = collection(db, "servicios");
+const equipoRef = collection(db, "equipo");
 
-export function createServiceSlug(text: string) {
+export function createTeamSlug(text: string) {
   return text
     .toLowerCase()
     .trim()
@@ -28,15 +28,15 @@ export function createServiceSlug(text: string) {
     .replace(/-+/g, "-");
 }
 
-export async function getServicios() {
-  const snapshot = await getDocs(serviciosRef);
+export async function getEquipo() {
+  const snapshot = await getDocs(equipoRef);
 
-  const servicios = snapshot.docs.map((document) => ({
+  const equipo = snapshot.docs.map((document) => ({
     id: document.id,
     ...document.data(),
-  })) as Servicio[];
+  })) as EquipoIntegrante[];
 
-  return servicios.sort((a, b) => {
+  return equipo.sort((a, b) => {
     const orderA = Number(a.order || 0);
     const orderB = Number(b.order || 0);
 
@@ -44,14 +44,14 @@ export async function getServicios() {
   });
 }
 
-export async function getActiveServicios() {
-  const servicios = await getServicios();
+export async function getActiveEquipo() {
+  const equipo = await getEquipo();
 
-  return servicios.filter((servicio) => servicio.active);
+  return equipo.filter((integrante) => integrante.active);
 }
 
-export async function getServicio(id: string) {
-  const documentRef = doc(db, "servicios", id);
+export async function getIntegranteEquipo(id: string) {
+  const documentRef = doc(db, "equipo", id);
   const snapshot = await getDoc(documentRef);
 
   if (!snapshot.exists()) {
@@ -61,12 +61,12 @@ export async function getServicio(id: string) {
   return {
     id: snapshot.id,
     ...snapshot.data(),
-  } as Servicio;
+  } as EquipoIntegrante;
 }
 
-export async function getActiveServicioBySlug(slug: string) {
+export async function getActiveIntegranteBySlug(slug: string) {
   const q = query(
-    serviciosRef,
+    equipoRef,
     where("slug", "==", slug),
     where("active", "==", true),
     limit(1)
@@ -83,19 +83,19 @@ export async function getActiveServicioBySlug(slug: string) {
   return {
     id: document.id,
     ...document.data(),
-  } as Servicio;
+  } as EquipoIntegrante;
 }
 
-export async function createServicio(data: ServicioFormData) {
-  return addDoc(serviciosRef, {
+export async function createIntegranteEquipo(data: EquipoFormData) {
+  return addDoc(equipoRef, {
     ...data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 }
 
-export async function updateServicio(id: string, data: ServicioFormData) {
-  const documentRef = doc(db, "servicios", id);
+export async function updateIntegranteEquipo(id: string, data: EquipoFormData) {
+  const documentRef = doc(db, "equipo", id);
 
   return updateDoc(documentRef, {
     ...data,
@@ -103,7 +103,8 @@ export async function updateServicio(id: string, data: ServicioFormData) {
   });
 }
 
-export async function deleteServicio(id: string) {
-  const documentRef = doc(db, "servicios", id);
+export async function deleteIntegranteEquipo(id: string) {
+  const documentRef = doc(db, "equipo", id);
+
   return deleteDoc(documentRef);
 }

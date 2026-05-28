@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { InicioContenido } from "@/types/contenido";
+
 const studies = [
   {
     id: 1,
@@ -44,7 +46,11 @@ const studies = [
   },
 ];
 
-export default function Studies() {
+type StudiesProps = {
+  contenido: InicioContenido;
+};
+
+export default function Studies({ contenido }: StudiesProps) {
   const [openId, setOpenId] = useState<number | null>(1);
 
   return (
@@ -52,16 +58,15 @@ export default function Studies() {
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto mb-14 max-w-3xl text-center">
           <span className="mb-4 block text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
-            Estudios y publicaciones
+            {contenido.studiesLabel}
           </span>
 
-          <h2 className="mb-5 text-4xl font-bold leading-tight md:text-5xl">
-            Evidencia pública presentada de forma clara y accionable
+          <h2 className="mb-5 wrap-anywhere text-4xl font-bold leading-tight md:text-5xl">
+            {contenido.studiesTitle}
           </h2>
 
-          <p className="text-lg leading-8 text-slate-400">
-            Esta sección será administrable: el equipo podrá agregar estudios,
-            noticias, documentos PDF e imágenes desde el panel privado.
+          <p className="wrap-anywhere text-lg leading-8 text-slate-400">
+            {contenido.studiesDescription}
           </p>
         </div>
 
@@ -88,11 +93,11 @@ export default function Studies() {
                         {study.date}
                       </p>
 
-                      <h3 className="text-xl font-bold text-white md:text-2xl">
+                      <h3 className="wrap-anywhere text-xl font-bold text-white md:text-2xl">
                         {study.title}
                       </h3>
 
-                      <p className="mt-1 text-sm text-slate-400">
+                      <p className="mt-1 wrap-anywhere text-sm text-slate-400">
                         {study.subtitle}
                       </p>
                     </div>
@@ -105,7 +110,7 @@ export default function Studies() {
 
                 {isOpen && (
                   <div className="border-t border-[#009B8D]/10 px-6 pb-8 pt-6 md:px-8">
-                    <p className="mb-6 leading-8 text-slate-300">
+                    <p className="mb-6 wrap-anywhere leading-8 text-slate-300">
                       {study.content}
                     </p>
 
@@ -118,7 +123,7 @@ export default function Studies() {
                           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#009B8D] text-xs font-bold text-white">
                             {index + 1}
                           </span>
-                          <span>{item}</span>
+                          <span className="wrap-anywhere">{item}</span>
                         </li>
                       ))}
                     </ul>

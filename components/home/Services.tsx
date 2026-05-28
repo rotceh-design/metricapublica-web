@@ -1,3 +1,5 @@
+import { InicioContenido } from "@/types/contenido";
+
 const services = [
   {
     number: "01",
@@ -29,23 +31,25 @@ const services = [
   },
 ];
 
-export default function Services() {
+type ServicesProps = {
+  contenido: InicioContenido;
+};
+
+export default function Services({ contenido }: ServicesProps) {
   return (
     <section id="servicios" className="bg-[#0a1628] px-6 py-24 text-white">
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 max-w-3xl">
           <span className="mb-4 block text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
-            Servicios
+            {contenido.servicesLabel}
           </span>
 
-          <h2 className="mb-5 text-4xl font-bold leading-tight md:text-5xl">
-            Soluciones basadas en datos para comprender escenarios complejos
+          <h2 className="mb-5 wrap-anywhere text-4xl font-bold leading-tight md:text-5xl">
+            {contenido.servicesTitle}
           </h2>
 
-          <p className="text-lg leading-8 text-slate-400">
-            Acompañamos a organizaciones públicas, privadas y sociales con
-            metodologías de investigación, análisis territorial y evidencia
-            estratégica.
+          <p className="wrap-anywhere text-lg leading-8 text-slate-400">
+            {contenido.servicesDescription}
           </p>
         </div>
 
@@ -63,11 +67,11 @@ export default function Services() {
                 ◈
               </div>
 
-              <h3 className="mb-4 pr-16 text-2xl font-bold text-white">
+              <h3 className="mb-4 pr-16 wrap-anywhere text-2xl font-bold text-white">
                 {service.title}
               </h3>
 
-              <p className="mb-6 leading-7 text-slate-400">
+              <p className="mb-6 wrap-anywhere leading-7 text-slate-400">
                 {service.description}
               </p>
 

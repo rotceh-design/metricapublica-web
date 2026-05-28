@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ElementType,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import {
@@ -16,130 +22,183 @@ import {
   ChevronRight,
   TrendingUp,
   Activity,
+  Mail,
+  Inbox,
+  FileText,
 } from "lucide-react";
 
 import { auth } from "@/lib/firebase";
 import { getNoticias } from "@/lib/noticias";
 import { getEstudios } from "@/lib/estudios";
+import { getMensajesContacto } from "@/lib/contacto";
 import { Noticia } from "@/types/noticia";
 import { Estudio } from "@/types/estudio";
+import { MensajeContacto } from "@/types/mensaje";
 
-// ─── Module cards config ───────────────────────────────────────────────────────
 const moduleCards = [
   {
-    title:       "Noticias",
+    title: "Noticias",
     description: "Crear, editar, publicar o eliminar noticias.",
-    href:        "/admin/noticias",
-    actionHref:  "/admin/noticias/nueva",
+    href: "/admin/noticias",
+    actionHref: "/admin/noticias/nueva",
     actionLabel: "Nueva noticia",
-    Icon:        Newspaper,
-    status:      "Activo" as const,
+    Icon: Newspaper,
+    status: "Activo" as const,
   },
   {
-    title:       "Estudios",
+    title: "Estudios",
     description: "Administrar estudios, publicaciones, imágenes y PDF.",
-    href:        "/admin/estudios",
-    actionHref:  "/admin/estudios/nuevo",
+    href: "/admin/estudios",
+    actionHref: "/admin/estudios/nuevo",
     actionLabel: "Nuevo estudio",
-    Icon:        BarChart2,
-    status:      "Activo" as const,
+    Icon: BarChart2,
+    status: "Activo" as const,
   },
   {
-    title:       "Servicios",
-    description: "Modificar servicios visibles en la página pública.",
-    href:        "/admin/servicios",
-    actionHref:  "/admin/servicios",
-    actionLabel: "Administrar",
-    Icon:        LayoutGrid,
-    status:      "Pendiente" as const,
+    title: "Servicios",
+    description: "Crear, editar y ordenar los servicios visibles en la web.",
+    href: "/admin/servicios",
+    actionHref: "/admin/servicios/nuevo",
+    actionLabel: "Nuevo servicio",
+    Icon: LayoutGrid,
+    status: "Activo" as const,
   },
   {
-    title:       "Equipo",
+    title: "Contenido",
+    description: "Editar textos principales de las páginas públicas del sitio.",
+    href: "/admin/contenido",
+    actionHref: "/admin/contenido",
+    actionLabel: "Editar contenido",
+    Icon: FileText,
+    status: "Activo" as const,
+  },
+  {
+    title: "Mensajes",
+    description: "Revisar solicitudes recibidas desde el formulario de contacto.",
+    href: "/admin/mensajes",
+    actionHref: "/admin/mensajes",
+    actionLabel: "Ver mensajes",
+    Icon: Mail,
+    status: "Activo" as const,
+  },
+  {
+    title: "Equipo",
     description: "Administrar integrantes, cargos, fotografías y biografías.",
-    href:        "/admin/equipo",
-    actionHref:  "/admin/equipo",
-    actionLabel: "Administrar",
-    Icon:        Users,
-    status:      "Pendiente" as const,
+    href: "/admin/equipo",
+    actionHref: "/admin/equipo/nuevo",
+    actionLabel: "Nuevo integrante",
+    Icon: Users,
+    status: "Activo" as const,
   },
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
   const router = useRouter();
 
-  const [user, setUser]       = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [estudios, setEstudios] = useState<Estudio[]>([]);
+  const [mensajes, setMensajes] = useState<MensajeContacto[]>([]);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) { router.push("/admin/login"); return; }
+      if (!currentUser) {
+        router.push("/admin/login");
+        return;
+      }
+
       setUser(currentUser);
+
       try {
-        const [noticiasData, estudiosData] = await Promise.all([
+        const [noticiasData, estudiosData, mensajesData] = await Promise.all([
           getNoticias(),
           getEstudios(),
+          getMensajesContacto(),
         ]);
+
         setNoticias(noticiasData);
         setEstudios(estudiosData);
+        setMensajes(mensajesData);
       } catch (error) {
         console.error("Error cargando dashboard:", error);
       } finally {
         setChecking(false);
       }
     });
+
     return () => unsubscribe();
   }, [router]);
 
   const stats = useMemo(() => {
-    const noticiasPublicadas = noticias.filter((n) => n.status === "published").length;
-    const noticiasBorrador   = noticias.filter((n) => n.status === "draft").length;
-    const estudiosPublicados = estudios.filter((e) => e.status === "published").length;
-    const estudiosBorrador   = estudios.filter((e) => e.status === "draft").length;
+    const noticiasPublicadas = noticias.filter(
+      (noticia) => noticia.status === "published"
+    ).length;
+
+    const noticiasBorrador = noticias.filter(
+      (noticia) => noticia.status === "draft"
+    ).length;
+
+    const estudiosPublicados = estudios.filter(
+      (estudio) => estudio.status === "published"
+    ).length;
+
+    const estudiosBorrador = estudios.filter(
+      (estudio) => estudio.status === "draft"
+    ).length;
+
+    const mensajesSinLeer = mensajes.filter((mensaje) => !mensaje.read).length;
 
     return [
       {
-        label:  "Noticias totales",
-        value:  noticias.length,
+        label: "Noticias totales",
+        value: noticias.length,
         detail: `${noticiasPublicadas} publicadas · ${noticiasBorrador} borrador`,
-        Icon:   Newspaper,
-        trend:  noticiasPublicadas,
+        Icon: Newspaper,
+        trend: noticiasPublicadas,
       },
       {
-        label:  "Estudios totales",
-        value:  estudios.length,
+        label: "Estudios totales",
+        value: estudios.length,
         detail: `${estudiosPublicados} publicados · ${estudiosBorrador} borrador`,
-        Icon:   BarChart2,
-        trend:  estudiosPublicados,
+        Icon: BarChart2,
+        trend: estudiosPublicados,
       },
       {
-        label:  "Publicados",
-        value:  noticiasPublicadas + estudiosPublicados,
+        label: "Mensajes",
+        value: mensajes.length,
+        detail: `${mensajesSinLeer} sin leer · ${
+          mensajes.length - mensajesSinLeer
+        } leídos`,
+        Icon: Inbox,
+        trend: mensajesSinLeer,
+      },
+      {
+        label: "Publicados",
+        value: noticiasPublicadas + estudiosPublicados,
         detail: "Contenido visible en la web pública",
-        Icon:   CheckCircle2,
-        trend:  null,
+        Icon: CheckCircle2,
+        trend: null,
       },
       {
-        label:  "Borradores",
-        value:  noticiasBorrador + estudiosBorrador,
+        label: "Borradores",
+        value: noticiasBorrador + estudiosBorrador,
         detail: "Contenido guardado sin publicar",
-        Icon:   FileEdit,
-        trend:  null,
+        Icon: FileEdit,
+        trend: null,
       },
     ];
-  }, [noticias, estudios]);
+  }, [noticias, estudios, mensajes]);
 
   const recentNoticias = noticias.slice(0, 3);
   const recentEstudios = estudios.slice(0, 3);
+  const recentMensajes = mensajes.slice(0, 3);
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push("/admin/login");
   };
 
-  // ── Loading ──
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0a1628] text-white">
@@ -147,6 +206,7 @@ export default function AdminDashboardPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#009B8D]/20">
             <Activity size={28} className="animate-pulse text-[#009B8D]" />
           </div>
+
           <p className="text-slate-400">Cargando panel administrativo...</p>
         </div>
       </main>
@@ -155,8 +215,6 @@ export default function AdminDashboardPage() {
 
   return (
     <main className="min-h-screen bg-[#0a1628] text-white">
-
-      {/* ── Header ── */}
       <header className="relative overflow-hidden border-b border-[#009B8D]/10 bg-[#08111f] px-6 py-8">
         <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-[#009B8D]/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-56 w-56 rounded-full bg-[#1a365d]/40 blur-3xl" />
@@ -172,8 +230,8 @@ export default function AdminDashboardPage() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-slate-400">
-              Administra noticias, estudios, publicaciones, documentos,
-              imágenes y contenido dinámico de la plataforma.
+              Administra noticias, estudios, publicaciones, servicios, mensajes,
+              equipo y contenido editable de la plataforma.
             </p>
 
             <p className="mt-3 wrap-anywhere text-sm text-slate-500">
@@ -182,7 +240,6 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          {/* Header actions */}
           <div className="flex flex-col gap-3 sm:flex-row">
             <a
               href="/"
@@ -205,16 +262,13 @@ export default function AdminDashboardPage() {
 
       <section className="px-6 py-10">
         <div className="mx-auto max-w-7xl">
-
-          {/* ── Stats grid ── */}
-          <div className="mb-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-10 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
             {stats.map((stat) => (
               <article
                 key={stat.label}
                 className="group rounded-3xl border border-[#009B8D]/15 bg-[#0f2744] p-6 shadow-xl transition hover:border-[#009B8D]/30 hover:shadow-[0_0_30px_rgba(0,155,141,0.08)]"
               >
                 <div className="mb-5 flex items-center justify-between">
-                  {/* Icon */}
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#009B8D]/20 bg-[#009B8D]/15 transition group-hover:bg-[#009B8D]/25">
                     <stat.Icon
                       size={22}
@@ -223,7 +277,6 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
-                  {/* Trend badge */}
                   {stat.trend !== null ? (
                     <span className="flex items-center gap-1 rounded-full border border-[#009B8D]/20 bg-[#009B8D]/10 px-3 py-1 text-xs font-bold text-[#009B8D]">
                       <TrendingUp size={11} strokeWidth={2.5} />
@@ -237,37 +290,41 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <p className="text-sm text-slate-400">{stat.label}</p>
+
                 <h2 className="mt-2 text-4xl font-bold">{stat.value}</h2>
-                <p className="mt-3 wrap-anywhere text-sm text-slate-500">{stat.detail}</p>
+
+                <p className="mt-3 wrap-anywhere text-sm text-slate-500">
+                  {stat.detail}
+                </p>
               </article>
             ))}
           </div>
 
-          {/* ── Module cards ── */}
           <div className="mb-10">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
                   Módulos
                 </p>
+
                 <h2 className="mt-2 text-3xl font-bold">
                   Administración de contenido
                 </h2>
               </div>
+
               <p className="max-w-xl text-sm text-slate-400">
                 Desde aquí puedes entrar a cada módulo del sistema y gestionar
                 el contenido visible en el sitio público.
               </p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {moduleCards.map((module) => (
                 <article
                   key={module.href}
-                  className="group rounded-3xl border border-[#009B8D]/15 bg-gradient-to-br from-[#0f2744] to-[#08111f] p-6 transition hover:-translate-y-1 hover:border-[#009B8D]/40 hover:shadow-2xl"
+                  className="group rounded-3xl border border-[#009B8D]/15 bg-linear-to-br from-[#0f2744] to-[#08111f] p-6 transition hover:-translate-y-1 hover:border-[#009B8D]/40 hover:shadow-2xl"
                 >
                   <div className="mb-6 flex items-center justify-between">
-                    {/* Module icon */}
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#009B8D]/20 bg-[#009B8D]/15 transition group-hover:bg-[#009B8D]/25 group-hover:shadow-[0_0_16px_rgba(0,155,141,0.3)]">
                       <module.Icon
                         size={26}
@@ -276,7 +333,6 @@ export default function AdminDashboardPage() {
                       />
                     </div>
 
-                    {/* Status badge */}
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-bold ${
                         module.status === "Activo"
@@ -288,9 +344,11 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
 
-                  <h3 className="mb-3 text-2xl font-bold">{module.title}</h3>
+                  <h3 className="mb-3 wrap-anywhere text-2xl font-bold">
+                    {module.title}
+                  </h3>
 
-                  <p className="mb-6 min-h-16 text-sm leading-6 text-slate-400">
+                  <p className="mb-6 min-h-16 wrap-anywhere text-sm leading-6 text-slate-400">
                     {module.description}
                   </p>
 
@@ -316,10 +374,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* ── Recent content ── */}
-          <div className="grid gap-8 lg:grid-cols-2">
-
-            {/* Recent noticias */}
+          <div className="grid gap-8 xl:grid-cols-3">
             <RecentSection
               label="Noticias"
               title="Últimas noticias"
@@ -327,26 +382,36 @@ export default function AdminDashboardPage() {
               Icon={Newspaper}
               empty="Todavía no hay noticias creadas."
             >
-              {recentNoticias.length === 0 ? null : recentNoticias.map((noticia) => (
-                <article
-                  key={noticia.id}
-                  className="rounded-2xl border border-white/10 bg-[#08111f] p-5 transition hover:border-white/20"
-                >
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <Badge color="teal">{noticia.category || "Sin categoría"}</Badge>
-                    <Badge>
-                      {noticia.status === "published" ? "Publicado" : "Borrador"}
-                    </Badge>
-                  </div>
-                  <h3 className="wrap-anywhere text-lg font-bold">{noticia.title}</h3>
-                  <p className="mt-2 wrap-anywhere text-sm text-slate-500">
-                    /noticias/{noticia.slug}
-                  </p>
-                </article>
-              ))}
+              {recentNoticias.length === 0
+                ? null
+                : recentNoticias.map((noticia) => (
+                    <article
+                      key={noticia.id}
+                      className="rounded-2xl border border-white/10 bg-[#08111f] p-5 transition hover:border-white/20"
+                    >
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <Badge color="teal">
+                          {noticia.category || "Sin categoría"}
+                        </Badge>
+
+                        <Badge>
+                          {noticia.status === "published"
+                            ? "Publicado"
+                            : "Borrador"}
+                        </Badge>
+                      </div>
+
+                      <h3 className="wrap-anywhere text-lg font-bold">
+                        {noticia.title}
+                      </h3>
+
+                      <p className="mt-2 wrap-anywhere text-sm text-slate-500">
+                        /noticias/{noticia.slug}
+                      </p>
+                    </article>
+                  ))}
             </RecentSection>
 
-            {/* Recent estudios */}
             <RecentSection
               label="Estudios"
               title="Últimos estudios"
@@ -354,34 +419,76 @@ export default function AdminDashboardPage() {
               Icon={BarChart2}
               empty="Todavía no hay estudios creados."
             >
-              {recentEstudios.length === 0 ? null : recentEstudios.map((estudio) => (
-                <article
-                  key={estudio.id}
-                  className="rounded-2xl border border-white/10 bg-[#08111f] p-5 transition hover:border-white/20"
-                >
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <Badge color="teal">{estudio.category || "Sin categoría"}</Badge>
-                    <Badge>
-                      {estudio.status === "published" ? "Publicado" : "Borrador"}
-                    </Badge>
-                    <Badge>{estudio.year || "Sin año"}</Badge>
-                  </div>
-                  <h3 className="wrap-anywhere text-lg font-bold">{estudio.title}</h3>
-                  <p className="mt-2 wrap-anywhere text-sm text-slate-500">
-                    /estudios/{estudio.slug}
-                  </p>
-                </article>
-              ))}
+              {recentEstudios.length === 0
+                ? null
+                : recentEstudios.map((estudio) => (
+                    <article
+                      key={estudio.id}
+                      className="rounded-2xl border border-white/10 bg-[#08111f] p-5 transition hover:border-white/20"
+                    >
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <Badge color="teal">
+                          {estudio.category || "Sin categoría"}
+                        </Badge>
+
+                        <Badge>
+                          {estudio.status === "published"
+                            ? "Publicado"
+                            : "Borrador"}
+                        </Badge>
+
+                        <Badge>{estudio.year || "Sin año"}</Badge>
+                      </div>
+
+                      <h3 className="wrap-anywhere text-lg font-bold">
+                        {estudio.title}
+                      </h3>
+
+                      <p className="mt-2 wrap-anywhere text-sm text-slate-500">
+                        /estudios/{estudio.slug}
+                      </p>
+                    </article>
+                  ))}
             </RecentSection>
 
+            <RecentSection
+              label="Mensajes"
+              title="Últimos mensajes"
+              href="/admin/mensajes"
+              Icon={Mail}
+              empty="Todavía no hay mensajes recibidos."
+            >
+              {recentMensajes.length === 0
+                ? null
+                : recentMensajes.map((mensaje) => (
+                    <article
+                      key={mensaje.id}
+                      className="rounded-2xl border border-white/10 bg-[#08111f] p-5 transition hover:border-white/20"
+                    >
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <Badge color={mensaje.read ? undefined : "teal"}>
+                          {mensaje.read ? "Leído" : "Nuevo"}
+                        </Badge>
+
+                        <Badge>{mensaje.name || "Sin nombre"}</Badge>
+                      </div>
+
+                      <h3 className="wrap-anywhere text-lg font-bold">
+                        {mensaje.subject || "Sin asunto"}
+                      </h3>
+
+                      <p className="mt-2 wrap-anywhere text-sm text-slate-500">
+                        {mensaje.email}
+                      </p>
+                    </article>
+                  ))}
+            </RecentSection>
           </div>
         </div>
       </section>
     </main>
   );
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function RecentSection({
   label,
@@ -394,11 +501,12 @@ function RecentSection({
   label: string;
   title: string;
   href: string;
-  Icon: React.ElementType;
+  Icon: ElementType;
   empty: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const isEmpty = !children || (Array.isArray(children) && children.every((c) => !c));
+  const isEmpty =
+    !children || (Array.isArray(children) && children.every((child) => !child));
 
   return (
     <section className="rounded-3xl border border-[#009B8D]/15 bg-[#0f2744] p-6">
@@ -407,10 +515,12 @@ function RecentSection({
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#009B8D]/20 bg-[#009B8D]/15">
             <Icon size={18} strokeWidth={1.8} className="text-[#009B8D]" />
           </div>
+
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#009B8D]">
               {label}
             </p>
+
             <h2 className="text-xl font-bold">{title}</h2>
           </div>
         </div>
@@ -439,7 +549,7 @@ function Badge({
   children,
   color,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   color?: "teal";
 }) {
   return (
