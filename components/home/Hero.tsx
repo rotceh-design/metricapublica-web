@@ -125,7 +125,7 @@ export default function Hero({
       <div className="absolute left-[8%] top-[18%] h-24 w-24 rounded-full border border-[#009B8D]/25 opacity-60 blur-[1px]" />
       <div className="absolute bottom-[18%] right-[10%] h-52 w-52 rounded-full bg-[#009B8D]/10 blur-3xl" />
       <div className="absolute right-[18%] top-[26%] h-3 w-3 rounded-full bg-[#009B8D] shadow-[0_0_25px_#009B8D]" />
-      <div className="absolute left-1/2 top-1/2 h-[460px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#009B8D]/8 blur-3xl" />
+      <div className="absolute left-1/2 top-1/2 h-115 w-190 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#009B8D]/8 blur-3xl" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center">
         <div className="mx-auto max-w-5xl">
@@ -188,7 +188,7 @@ export default function Hero({
                   <a
                     key={`${item.id}-${index}`}
                     href={item.href}
-                    className="w-[290px] shrink-0 overflow-hidden rounded-3xl border border-[#009B8D]/15 bg-[#08111f]/75 text-left shadow-2xl backdrop-blur transition hover:-translate-y-1 hover:border-[#009B8D]/45 hover:bg-[#0f2744]"
+                    className="w-72.5 shrink-0 overflow-hidden rounded-3xl border border-[#009B8D]/15 bg-[#08111f]/75 text-left shadow-2xl backdrop-blur transition hover:-translate-y-1 hover:border-[#009B8D]/45 hover:bg-[#0f2744]"
                   >
                     <div className="relative h-36 overflow-hidden bg-linear-to-br from-[#1a365d]/80 to-[#009B8D]/20">
                       {item.imageUrl ? (
@@ -226,7 +226,7 @@ export default function Hero({
 
                     <div className="p-5">
                       <div className="mb-4 flex items-center justify-between gap-3">
-                        <span className="max-w-[150px] truncate rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                        <span className="max-w-37.5 truncate rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
                           {item.category}
                         </span>
 

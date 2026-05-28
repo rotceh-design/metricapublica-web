@@ -70,7 +70,7 @@ export default function Contact({ contenido = defaultInicioContenido }: ContactP
       id="contacto"
       className="relative overflow-hidden bg-[#0f2744] px-6 py-24 text-white"
     >
-      <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#009B8D]/10 blur-3xl" />
+      <div className="absolute left-1/2 top-0 h-125 w-125 -translate-x-1/2 rounded-full bg-[#009B8D]/10 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-5xl">
         <div className="mx-auto mb-12 max-w-3xl text-center">

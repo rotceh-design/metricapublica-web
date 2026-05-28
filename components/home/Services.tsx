@@ -93,7 +93,7 @@ export default function Services({
               {servicesToShow.map((service) => (
                 <article
                   key={service.id}
-                  className="group relative flex min-h-[320px] flex-col overflow-hidden rounded-3xl border border-[#009B8D]/10 bg-linear-to-br from-[#1a365d]/40 to-[#0f2744]/40 p-8 transition hover:-translate-y-1 hover:border-[#009B8D]/40 hover:shadow-2xl"
+                  className="group relative flex min-h-80 flex-col overflow-hidden rounded-3xl border border-[#009B8D]/10 bg-linear-to-br from-[#1a365d]/40 to-[#0f2744]/40 p-8 transition hover:-translate-y-1 hover:border-[#009B8D]/40 hover:shadow-2xl"
                 >
                   <div className="absolute right-8 top-6 text-6xl font-bold text-[#009B8D]/10">
                     {service.number}
@@ -157,7 +157,7 @@ function ServicesLoading() {
       {[1, 2, 3, 4].map((item) => (
         <div
           key={item}
-          className="min-h-[320px] rounded-3xl border border-[#009B8D]/10 bg-[#0f2744]/60 p-8"
+          className="min-h-80 rounded-3xl border border-[#009B8D]/10 bg-[#0f2744]/60 p-8"
         >
           <div className="mb-6 h-16 w-16 animate-pulse rounded-2xl bg-white/10" />
           <div className="mb-4 h-7 w-2/3 animate-pulse rounded-full bg-white/10" />
