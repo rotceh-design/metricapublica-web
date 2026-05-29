@@ -16,10 +16,12 @@ import {
 import { getActiveServicios } from "@/lib/servicios";
 import { getPublishedEstudios } from "@/lib/estudios";
 import { getNoticias } from "@/lib/noticias";
+import { getActiveSectores } from "@/lib/sectores";
 import { InicioContenido } from "@/types/contenido";
 import { Servicio } from "@/types/servicio";
 import { Estudio } from "@/types/estudio";
 import { Noticia } from "@/types/noticia";
+import { Sector } from "@/types/sector";
 
 export default function HomePage() {
   const [contenido, setContenido] = useState<InicioContenido>(
@@ -29,24 +31,33 @@ export default function HomePage() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [estudios, setEstudios] = useState<Estudio[]>([]);
   const [noticias, setNoticias] = useState<Noticia[]>([]);
+  const [sectores, setSectores] = useState<Sector[]>([]);
 
   const [loadingServicios, setLoadingServicios] = useState(true);
   const [loadingEstudios, setLoadingEstudios] = useState(true);
+  const [loadingSectores, setLoadingSectores] = useState(true);
 
   useEffect(() => {
     const loadHomeData = async () => {
       try {
-        const [contenidoData, serviciosData, estudiosData, noticiasData] =
-          await Promise.all([
-            getInicioContenido(),
-            getActiveServicios(),
-            getPublishedEstudios(),
-            getNoticias(),
-          ]);
+        const [
+          contenidoData,
+          serviciosData,
+          estudiosData,
+          noticiasData,
+          sectoresData,
+        ] = await Promise.all([
+          getInicioContenido(),
+          getActiveServicios(),
+          getPublishedEstudios(),
+          getNoticias(),
+          getActiveSectores(),
+        ]);
 
         setContenido(contenidoData);
         setServicios(serviciosData);
         setEstudios(estudiosData);
+        setSectores(sectoresData);
 
         setNoticias(
           noticiasData.filter((noticia) => noticia.status === "published")
@@ -56,6 +67,7 @@ export default function HomePage() {
       } finally {
         setLoadingServicios(false);
         setLoadingEstudios(false);
+        setLoadingSectores(false);
       }
     };
 
@@ -66,11 +78,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#0a1628] text-white">
       <Navbar />
 
-      <Hero
-        contenido={contenido}
-        estudios={estudios}
-        noticias={noticias}
-      />
+      <Hero contenido={contenido} estudios={estudios} noticias={noticias} />
 
       <Services
         contenido={contenido}
@@ -84,7 +92,12 @@ export default function HomePage() {
         loading={loadingEstudios}
       />
 
-      <Sectors contenido={contenido} />
+      <Sectors
+        contenido={contenido}
+        sectores={sectores}
+        loading={loadingSectores}
+      />
+
       <Contact contenido={contenido} />
 
       <Footer />
