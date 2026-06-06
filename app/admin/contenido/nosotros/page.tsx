@@ -1,17 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import {
   BarChart2,
   Compass,
+  ExternalLink,
+  FileText,
   Handshake,
   Map,
+  RotateCcw,
   Save,
-  FileText,
 } from "lucide-react";
 
+import AdminEditorShell from "@/components/admin/AdminEditorShell";
 import { auth } from "@/lib/firebase";
 import {
   defaultNosotrosContenido,
@@ -79,14 +89,52 @@ export default function AdminContenidoNosotrosPage() {
     return () => unsubscribe();
   }, [router]);
 
+  const completionScore = useMemo(() => {
+    const values = [
+      form.heroLabel,
+      form.heroTitle,
+      form.heroDescription,
+      form.focusLabel,
+      form.focusTitle,
+      form.focusParagraphOne,
+      form.focusParagraphTwo,
+      form.pillarOneTitle,
+      form.pillarOneDescription,
+      form.pillarTwoTitle,
+      form.pillarTwoDescription,
+      form.pillarThreeTitle,
+      form.pillarThreeDescription,
+      form.pillarFourTitle,
+      form.pillarFourDescription,
+      form.teamLabel,
+      form.teamTitle,
+      form.teamDescription,
+    ];
+
+    const completed = values.filter((value) => value.trim().length > 0).length;
+
+    return Math.round((completed / values.length) * 100);
+  }, [form]);
+
+  const totalWords = useMemo(() => {
+    return Object.values(form)
+      .join(" ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length;
+  }, [form]);
+
   const updateField = (field: keyof NosotrosContenido, value: string) => {
+    setStatusMessage("");
+    setError("");
+
     setForm((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     setSaving(true);
@@ -114,362 +162,548 @@ export default function AdminContenidoNosotrosPage() {
     if (!confirmReset) return;
 
     setForm(defaultNosotrosContenido);
+    setStatusMessage("");
+    setError("");
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/admin/login");
   };
 
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0a1628] text-white">
-        <p className="text-slate-400">Cargando contenido editable...</p>
+        <div className="rounded-[2rem] border border-[#009B8D]/15 bg-[#0f2744] p-8 text-center shadow-2xl">
+          <div className="mx-auto mb-4 h-12 w-12 animate-pulse rounded-2xl bg-[#009B8D]/20" />
+
+          <p className="font-semibold text-slate-400">
+            Cargando contenido editable...
+          </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#0a1628] px-6 py-10 text-white">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
-              Contenido editable
-            </p>
-
-            <h1 className="text-4xl font-bold">Página Nosotros</h1>
-
-            <p className="mt-2 max-w-2xl text-slate-400">
-              Edita los textos principales que aparecen en la página pública
-              Nosotros. Solo usuarios administradores pueden modificar esta
-              información.
-            </p>
-
-            <p className="mt-2 wrap-anywhere text-sm text-slate-500">
-              Sesión iniciada como{" "}
-              <span className="font-semibold text-white">{user?.email}</span>
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <a
-              href="/admin/dashboard"
-              className="rounded-xl border border-white/10 px-5 py-3 text-center font-semibold transition hover:bg-white/5"
+    <AdminEditorShell
+      title="Página Nosotros"
+      description="Edita los textos principales de la página pública Nosotros: hero, enfoque, pilares institucionales y bloque de equipo."
+      userEmail={user?.email}
+      backHref="/admin/contenido"
+      backLabel="Volver a contenido"
+      onLogout={handleLogout}
+      actions={
+        <button
+          type="submit"
+          form="nosotros-content-form"
+          disabled={saving}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-5 py-3 text-sm font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Save size={17} />
+          {saving ? "Guardando..." : "Guardar"}
+        </button>
+      }
+    >
+      <form id="nosotros-content-form" onSubmit={handleSave}>
+        <div className="mb-5 grid gap-3 2xl:grid-cols-[1fr_auto] 2xl:items-center">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/contenido"
+              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-[#009B8D]/15 bg-[#0f2744] px-4 py-3 text-sm font-black text-slate-200 transition hover:border-[#009B8D]/40 hover:bg-[#1a365d] hover:text-[#20d6c7]"
             >
-              Volver
-            </a>
+              Volver a contenido
+            </Link>
 
-            <a
+            <Link
               href="/nosotros"
               target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-xl border border-[#009B8D]/30 px-5 py-3 text-center font-semibold text-[#009B8D] transition hover:bg-[#009B8D]/10"
+              className="inline-flex w-fit items-center gap-2 rounded-2xl border border-[#009B8D]/25 bg-[#009B8D]/10 px-4 py-3 text-sm font-black text-[#20d6c7] transition hover:bg-[#009B8D]/15 hover:text-white"
             >
-              Ver página
-            </a>
+              <ExternalLink size={16} />
+              Ver página pública
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap gap-2 2xl:justify-end">
+            <InfoPill label={`${completionScore}% completo`} />
+            <InfoPill label={`${totalWords} palabras`} />
+            <InfoPill label="Nosotros" />
+            <InfoPill label="Contenido público" />
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
-          <form
-            onSubmit={handleSave}
-            className="rounded-3xl border border-[#009B8D]/15 bg-[#0f2744] p-6 shadow-2xl md:p-8"
-          >
-            <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-[#009B8D]/15 bg-[#08111f]/70 p-5">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#009B8D]/15">
-                  <FileText size={24} className="text-[#009B8D]" />
-                </div>
+        <div className="grid w-full gap-5 2xl:grid-cols-[minmax(760px,1.35fr)_minmax(440px,0.75fr)]">
+          <section className="space-y-5">
+            <EditorShellCard
+              title="Editor de contenido"
+              description="Los cambios se verán en /nosotros después de guardar."
+              actions={
+                <button
+                  type="button"
+                  onClick={resetToDefault}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-black text-slate-300 transition hover:bg-white/5 hover:text-white"
+                >
+                  <RotateCcw size={16} />
+                  Restaurar base
+                </button>
+              }
+            >
+              <div className="grid gap-6">
+                <EditorSection
+                  title="Hero principal"
+                  description="Primera impresión de la página Nosotros."
+                >
+                  <TextInput
+                    label="Etiqueta"
+                    value={form.heroLabel}
+                    onChange={(value) => updateField("heroLabel", value)}
+                    placeholder="Ej: Nosotros"
+                  />
 
-                <div>
-                  <p className="font-bold">Editor de contenido</p>
-                  <p className="text-sm text-slate-500">
-                    Los cambios se verán en /nosotros después de guardar.
-                  </p>
-                </div>
-              </div>
+                  <TextArea
+                    label="Título principal"
+                    value={form.heroTitle}
+                    onChange={(value) => updateField("heroTitle", value)}
+                    rows={3}
+                    placeholder="Título principal de la página"
+                  />
 
-              <button
-                type="button"
-                onClick={resetToDefault}
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5"
-              >
-                Restaurar base
-              </button>
-            </div>
+                  <TextArea
+                    label="Descripción principal"
+                    value={form.heroDescription}
+                    onChange={(value) =>
+                      updateField("heroDescription", value)
+                    }
+                    rows={4}
+                    placeholder="Texto introductorio de la página Nosotros"
+                  />
+                </EditorSection>
 
-            <div className="grid gap-8">
-              <EditorSection title="Hero principal">
-                <TextInput
-                  label="Etiqueta"
-                  value={form.heroLabel}
-                  onChange={(value) => updateField("heroLabel", value)}
-                />
+                <EditorSection
+                  title="Bloque Enfoque"
+                  description="Texto editorial que explica la mirada de Métrica Pública."
+                >
+                  <TextInput
+                    label="Etiqueta de sección"
+                    value={form.focusLabel}
+                    onChange={(value) => updateField("focusLabel", value)}
+                    placeholder="Ej: Nuestro enfoque"
+                  />
 
-                <TextArea
-                  label="Título principal"
-                  value={form.heroTitle}
-                  onChange={(value) => updateField("heroTitle", value)}
-                  rows={3}
-                />
+                  <TextArea
+                    label="Título del enfoque"
+                    value={form.focusTitle}
+                    onChange={(value) => updateField("focusTitle", value)}
+                    rows={3}
+                    placeholder="Título del bloque de enfoque"
+                  />
 
-                <TextArea
-                  label="Descripción principal"
-                  value={form.heroDescription}
-                  onChange={(value) => updateField("heroDescription", value)}
-                  rows={4}
-                />
-              </EditorSection>
+                  <TextArea
+                    label="Párrafo 1"
+                    value={form.focusParagraphOne}
+                    onChange={(value) =>
+                      updateField("focusParagraphOne", value)
+                    }
+                    rows={4}
+                    placeholder="Primer párrafo del enfoque"
+                  />
 
-              <EditorSection title="Bloque Enfoque">
-                <TextInput
-                  label="Etiqueta de sección"
-                  value={form.focusLabel}
-                  onChange={(value) => updateField("focusLabel", value)}
-                />
+                  <TextArea
+                    label="Párrafo 2"
+                    value={form.focusParagraphTwo}
+                    onChange={(value) =>
+                      updateField("focusParagraphTwo", value)
+                    }
+                    rows={4}
+                    placeholder="Segundo párrafo del enfoque"
+                  />
+                </EditorSection>
 
-                <TextArea
-                  label="Título del enfoque"
-                  value={form.focusTitle}
-                  onChange={(value) => updateField("focusTitle", value)}
-                  rows={3}
-                />
-
-                <TextArea
-                  label="Párrafo 1"
-                  value={form.focusParagraphOne}
-                  onChange={(value) =>
-                    updateField("focusParagraphOne", value)
-                  }
-                  rows={4}
-                />
-
-                <TextArea
-                  label="Párrafo 2"
-                  value={form.focusParagraphTwo}
-                  onChange={(value) =>
-                    updateField("focusParagraphTwo", value)
-                  }
-                  rows={4}
-                />
-              </EditorSection>
-
-              <EditorSection title="Pilares">
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div>
-                    <TextInput
-                      label="Pilar 1"
-                      value={form.pillarOneTitle}
-                      onChange={(value) =>
+                <EditorSection
+                  title="Pilares"
+                  description="Cuatro pilares que se muestran como tarjetas en la página pública."
+                >
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <PillarEditor
+                      number="01"
+                      titleLabel="Pilar 1"
+                      titleValue={form.pillarOneTitle}
+                      descriptionLabel="Descripción pilar 1"
+                      descriptionValue={form.pillarOneDescription}
+                      onTitleChange={(value) =>
                         updateField("pillarOneTitle", value)
                       }
-                    />
-
-                    <TextArea
-                      label="Descripción pilar 1"
-                      value={form.pillarOneDescription}
-                      onChange={(value) =>
+                      onDescriptionChange={(value) =>
                         updateField("pillarOneDescription", value)
                       }
-                      rows={3}
                     />
-                  </div>
 
-                  <div>
-                    <TextInput
-                      label="Pilar 2"
-                      value={form.pillarTwoTitle}
-                      onChange={(value) =>
+                    <PillarEditor
+                      number="02"
+                      titleLabel="Pilar 2"
+                      titleValue={form.pillarTwoTitle}
+                      descriptionLabel="Descripción pilar 2"
+                      descriptionValue={form.pillarTwoDescription}
+                      onTitleChange={(value) =>
                         updateField("pillarTwoTitle", value)
                       }
-                    />
-
-                    <TextArea
-                      label="Descripción pilar 2"
-                      value={form.pillarTwoDescription}
-                      onChange={(value) =>
+                      onDescriptionChange={(value) =>
                         updateField("pillarTwoDescription", value)
                       }
-                      rows={3}
                     />
-                  </div>
 
-                  <div>
-                    <TextInput
-                      label="Pilar 3"
-                      value={form.pillarThreeTitle}
-                      onChange={(value) =>
+                    <PillarEditor
+                      number="03"
+                      titleLabel="Pilar 3"
+                      titleValue={form.pillarThreeTitle}
+                      descriptionLabel="Descripción pilar 3"
+                      descriptionValue={form.pillarThreeDescription}
+                      onTitleChange={(value) =>
                         updateField("pillarThreeTitle", value)
                       }
-                    />
-
-                    <TextArea
-                      label="Descripción pilar 3"
-                      value={form.pillarThreeDescription}
-                      onChange={(value) =>
+                      onDescriptionChange={(value) =>
                         updateField("pillarThreeDescription", value)
                       }
-                      rows={3}
                     />
-                  </div>
 
-                  <div>
-                    <TextInput
-                      label="Pilar 4"
-                      value={form.pillarFourTitle}
-                      onChange={(value) =>
+                    <PillarEditor
+                      number="04"
+                      titleLabel="Pilar 4"
+                      titleValue={form.pillarFourTitle}
+                      descriptionLabel="Descripción pilar 4"
+                      descriptionValue={form.pillarFourDescription}
+                      onTitleChange={(value) =>
                         updateField("pillarFourTitle", value)
                       }
-                    />
-
-                    <TextArea
-                      label="Descripción pilar 4"
-                      value={form.pillarFourDescription}
-                      onChange={(value) =>
+                      onDescriptionChange={(value) =>
                         updateField("pillarFourDescription", value)
                       }
-                      rows={3}
                     />
                   </div>
-                </div>
-              </EditorSection>
+                </EditorSection>
 
-              <EditorSection title="Bloque Equipo">
-                <TextInput
-                  label="Etiqueta"
-                  value={form.teamLabel}
-                  onChange={(value) => updateField("teamLabel", value)}
-                />
+                <EditorSection
+                  title="Bloque Equipo"
+                  description="Encabezado de la sección donde se muestran los integrantes activos."
+                >
+                  <TextInput
+                    label="Etiqueta"
+                    value={form.teamLabel}
+                    onChange={(value) => updateField("teamLabel", value)}
+                    placeholder="Ej: Equipo"
+                  />
 
-                <TextArea
-                  label="Título de equipo"
-                  value={form.teamTitle}
-                  onChange={(value) => updateField("teamTitle", value)}
-                  rows={3}
-                />
+                  <TextArea
+                    label="Título de equipo"
+                    value={form.teamTitle}
+                    onChange={(value) => updateField("teamTitle", value)}
+                    rows={3}
+                    placeholder="Título de la sección equipo"
+                  />
 
-                <TextArea
-                  label="Descripción de equipo"
-                  value={form.teamDescription}
-                  onChange={(value) => updateField("teamDescription", value)}
-                  rows={4}
-                />
-              </EditorSection>
+                  <TextArea
+                    label="Descripción de equipo"
+                    value={form.teamDescription}
+                    onChange={(value) =>
+                      updateField("teamDescription", value)
+                    }
+                    rows={4}
+                    placeholder="Descripción introductoria del equipo"
+                  />
+                </EditorSection>
 
-              {statusMessage && (
-                <div className="rounded-xl border border-[#009B8D]/30 bg-[#009B8D]/10 px-4 py-3 text-sm text-slate-200">
-                  {statusMessage}
-                </div>
-              )}
+                {statusMessage && (
+                  <div className="rounded-[1.5rem] border border-[#009B8D]/30 bg-[#009B8D]/10 px-5 py-4 text-sm font-bold text-slate-200">
+                    {statusMessage}
+                  </div>
+                )}
 
-              {error && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {error}
-                </div>
-              )}
+                {error && (
+                  <div className="rounded-[1.5rem] border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-200">
+                    {error}
+                  </div>
+                )}
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#009B8D] px-6 py-4 font-bold transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Save size={18} />
-                {saving ? "Guardando contenido..." : "Guardar contenido"}
-              </button>
-            </div>
-          </form>
-
-          <aside className="lg:sticky lg:top-8 lg:h-fit">
-            <div className="overflow-hidden rounded-3xl border border-[#009B8D]/15 bg-[#0f2744] shadow-2xl">
-              <div className="relative overflow-hidden bg-linear-to-br from-[#08111f] to-[#0f2744] p-8">
-                <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-[#009B8D]/10 blur-3xl" />
-
-                <div className="relative z-10">
-                  <p className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
-                    {form.heroLabel || "Nosotros"}
-                  </p>
-
-                  <h2 className="wrap-anywhere text-4xl font-bold leading-tight">
-                    {form.heroTitle || "Título principal"}
-                  </h2>
-
-                  <p className="mt-5 wrap-anywhere leading-8 text-slate-300">
-                    {form.heroDescription || "Descripción principal"}
-                  </p>
-                </div>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-6 py-4 font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Save size={18} />
+                  {saving ? "Guardando contenido..." : "Guardar contenido"}
+                </button>
               </div>
+            </EditorShellCard>
+          </section>
 
-              <div className="p-7">
-                <div className="mb-6 rounded-2xl border border-white/10 bg-[#08111f]/80 p-5">
-                  <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
-                    {form.focusLabel || "Enfoque"}
-                  </p>
+          <aside className="space-y-5 2xl:sticky 2xl:top-28 2xl:h-fit">
+            <PreviewPanel form={form} />
 
-                  <h3 className="wrap-anywhere text-2xl font-bold">
-                    {form.focusTitle || "Título del enfoque"}
-                  </h3>
-
-                  <p className="mt-4 wrap-anywhere text-sm leading-7 text-slate-400">
-                    {form.focusParagraphOne}
-                  </p>
-
-                  <p className="mt-4 wrap-anywhere text-sm leading-7 text-slate-400">
-                    {form.focusParagraphTwo}
-                  </p>
-                </div>
-
-                <div className="grid gap-4">
-                  {previewPillars.map(({ Icon, titleKey, descriptionKey }) => (
-                    <div
-                      key={titleKey}
-                      className="rounded-2xl border border-white/10 bg-[#08111f]/80 p-5"
-                    >
-                      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#009B8D]/15">
-                        <Icon size={20} className="text-[#009B8D]" />
-                      </div>
-
-                      <h4 className="wrap-anywhere font-bold">
-                        {form[titleKey]}
-                      </h4>
-
-                      <p className="mt-2 wrap-anywhere text-sm leading-6 text-slate-400">
-                        {form[descriptionKey]}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 rounded-2xl border border-white/10 bg-[#08111f]/80 p-5">
-                  <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-[#009B8D]">
-                    {form.teamLabel || "Equipo"}
-                  </p>
-
-                  <h3 className="wrap-anywhere text-2xl font-bold">
-                    {form.teamTitle || "Título equipo"}
-                  </h3>
-
-                  <p className="mt-4 wrap-anywhere text-sm leading-7 text-slate-400">
-                    {form.teamDescription || "Descripción equipo"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <SummaryPanel
+              completionScore={completionScore}
+              totalWords={totalWords}
+            />
           </aside>
         </div>
+
+        <div className="sticky bottom-4 z-20 mt-5 rounded-[1.7rem] border border-[#009B8D]/15 bg-[#08111f]/95 p-3 shadow-2xl backdrop-blur 2xl:hidden">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-5 py-4 text-sm font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Save size={17} />
+            {saving ? "Guardando..." : "Guardar contenido"}
+          </button>
+        </div>
+      </form>
+    </AdminEditorShell>
+  );
+}
+
+function EditorShellCard({
+  title,
+  description,
+  actions,
+  children,
+}: {
+  title: string;
+  description: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[2rem] border border-[#009B8D]/15 bg-[#0f2744] shadow-[0_20px_70px_rgba(0,0,0,0.22)]">
+      <div className="border-b border-white/10 bg-[#08111f] p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-[#009B8D]/15 text-[#20d6c7]">
+              <FileText size={24} />
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-black text-white">{title}</h2>
+
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+                {description}
+              </p>
+            </div>
+          </div>
+
+          {actions}
+        </div>
       </div>
-    </main>
+
+      <div className="p-5 sm:p-6">{children}</div>
+    </section>
   );
 }
 
 function EditorSection({
   title,
+  description,
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  description: string;
+  children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#08111f]/50 p-5">
-      <h2 className="mb-5 text-xl font-bold">{title}</h2>
+    <section className="rounded-[1.7rem] border border-white/10 bg-[#08111f]/60 p-5">
+      <div className="mb-5">
+        <h3 className="text-xl font-black text-white">{title}</h3>
+
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          {description}
+        </p>
+      </div>
 
       <div className="grid gap-5">{children}</div>
     </section>
+  );
+}
+
+function PillarEditor({
+  number,
+  titleLabel,
+  titleValue,
+  descriptionLabel,
+  descriptionValue,
+  onTitleChange,
+  onDescriptionChange,
+}: {
+  number: string;
+  titleLabel: string;
+  titleValue: string;
+  descriptionLabel: string;
+  descriptionValue: string;
+  onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
+}) {
+  return (
+    <div className="rounded-[1.5rem] border border-white/10 bg-[#0a1628]/60 p-4">
+      <div className="mb-4 inline-flex rounded-full border border-[#009B8D]/20 bg-[#009B8D]/10 px-3 py-1 text-xs font-black text-[#20d6c7]">
+        Pilar {number}
+      </div>
+
+      <div className="grid gap-4">
+        <TextInput
+          label={titleLabel}
+          value={titleValue}
+          onChange={onTitleChange}
+          placeholder="Título del pilar"
+        />
+
+        <TextArea
+          label={descriptionLabel}
+          value={descriptionValue}
+          onChange={onDescriptionChange}
+          rows={4}
+          placeholder="Descripción del pilar"
+        />
+      </div>
+    </div>
+  );
+}
+
+function PreviewPanel({ form }: { form: NosotrosContenido }) {
+  return (
+    <section className="overflow-hidden rounded-[2rem] border border-[#009B8D]/15 bg-[#0f2744] shadow-[0_20px_70px_rgba(0,0,0,0.22)]">
+      <div className="relative overflow-hidden bg-linear-to-br from-[#08111f] to-[#0f2744] p-6">
+        <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[#009B8D]/10 blur-3xl" />
+
+        <div className="relative z-10">
+          <p className="mb-4 text-xs font-black uppercase tracking-[0.22em] text-[#009B8D]">
+            {form.heroLabel || "Nosotros"}
+          </p>
+
+          <h2 className="wrap-anywhere text-4xl font-black leading-tight">
+            {form.heroTitle || "Título principal"}
+          </h2>
+
+          <p className="mt-5 wrap-anywhere leading-8 text-slate-300">
+            {form.heroDescription || "Descripción principal"}
+          </p>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3 2xl:grid-cols-1">
+            <PreviewStat label="Enfoque" value="Evidencia" />
+            <PreviewStat label="Trabajo" value="Territorio" />
+            <PreviewStat label="Decisiones" value="Datos" />
+          </div>
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="mb-5 rounded-[1.5rem] border border-white/10 bg-[#08111f]/80 p-5">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#009B8D]">
+            {form.focusLabel || "Enfoque"}
+          </p>
+
+          <h3 className="wrap-anywhere text-2xl font-black">
+            {form.focusTitle || "Título del enfoque"}
+          </h3>
+
+          <p className="mt-4 wrap-anywhere text-sm leading-7 text-slate-400">
+            {form.focusParagraphOne || "Primer párrafo del enfoque."}
+          </p>
+
+          <p className="mt-4 wrap-anywhere text-sm leading-7 text-slate-400">
+            {form.focusParagraphTwo || "Segundo párrafo del enfoque."}
+          </p>
+        </div>
+
+        <div className="grid gap-4">
+          {previewPillars.map(({ Icon, titleKey, descriptionKey }) => (
+            <div
+              key={titleKey}
+              className="rounded-[1.5rem] border border-white/10 bg-[#08111f]/80 p-5"
+            >
+              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#009B8D]/15">
+                <Icon size={20} className="text-[#20d6c7]" />
+              </div>
+
+              <h4 className="wrap-anywhere font-black">
+                {form[titleKey] || "Título del pilar"}
+              </h4>
+
+              <p className="mt-2 wrap-anywhere text-sm leading-6 text-slate-400">
+                {form[descriptionKey] || "Descripción del pilar."}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-[#08111f]/80 p-5">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#009B8D]">
+            {form.teamLabel || "Equipo"}
+          </p>
+
+          <h3 className="wrap-anywhere text-2xl font-black">
+            {form.teamTitle || "Título equipo"}
+          </h3>
+
+          <p className="mt-4 wrap-anywhere text-sm leading-7 text-slate-400">
+            {form.teamDescription || "Descripción equipo"}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SummaryPanel({
+  completionScore,
+  totalWords,
+}: {
+  completionScore: number;
+  totalWords: number;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-[#009B8D]/15 bg-[#08111f] p-5 shadow-[0_20px_70px_rgba(0,0,0,0.22)]">
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-[#009B8D]">
+        Resumen
+      </p>
+
+      <div className="mt-4 space-y-4 text-sm">
+        <SummaryItem label="Completitud" value={`${completionScore}%`} />
+        <SummaryItem label="Palabras totales" value={String(totalWords)} />
+        <SummaryItem label="Página" value="/nosotros" />
+        <SummaryItem label="Estado" value="Editable" />
+      </div>
+    </section>
+  );
+}
+
+function PreviewStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-[#009B8D]/15 bg-[#0f2744]/80 p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xl font-black text-white">{value}</p>
+    </div>
+  );
+}
+
+function InfoPill({ label }: { label: string }) {
+  return (
+    <span className="rounded-full border border-[#009B8D]/15 bg-[#009B8D]/10 px-3 py-1 text-xs font-black text-[#20d6c7]">
+      {label}
+    </span>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="wrap-anywhere font-black text-white">{value}</p>
+    </div>
   );
 }
 
@@ -477,21 +711,24 @@ function TextInput({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-300">
+      <label className="mb-2 block text-sm font-bold text-slate-300">
         {label}
       </label>
 
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 outline-none transition placeholder:text-slate-500 focus:border-[#009B8D]"
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-[#009B8D]"
       />
     </div>
   );
@@ -502,15 +739,17 @@ function TextArea({
   value,
   onChange,
   rows,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows: number;
+  placeholder?: string;
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-300">
+      <label className="mb-2 block text-sm font-bold text-slate-300">
         {label}
       </label>
 
@@ -518,7 +757,8 @@ function TextArea({
         value={value}
         rows={rows}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 leading-7 outline-none transition placeholder:text-slate-500 focus:border-[#009B8D]"
+        placeholder={placeholder}
+        className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-[#009B8D]"
       />
     </div>
   );

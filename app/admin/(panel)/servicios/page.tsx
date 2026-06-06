@@ -1,0 +1,352 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged, User } from "firebase/auth";
+
+import { auth } from "@/lib/firebase";
+import { deleteServicio, getServicios } from "@/lib/servicios";
+import { Servicio } from "@/types/servicio";
+
+export default function AdminServiciosPage() {
+  const router = useRouter();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadServicios = async () => {
+    const data = await getServicios();
+    setServicios(data);
+  };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        router.push("/admin/login");
+        return;
+      }
+
+      setUser(currentUser);
+      await loadServicios();
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  const sortedServicios = useMemo(() => {
+    return [...servicios].sort((a, b) => {
+      const orderA = Number(a.order || 0);
+      const orderB = Number(b.order || 0);
+
+      return orderA - orderB;
+    });
+  }, [servicios]);
+
+  const totalActive = servicios.filter((servicio) =>
+    Boolean(servicio.active)
+  ).length;
+
+  const totalInactive = servicios.filter(
+    (servicio) => !Boolean(servicio.active)
+  ).length;
+
+  const totalFeatured = servicios.filter((servicio) =>
+    Boolean(servicio.featured)
+  ).length;
+
+  const handleDelete = async (id: string) => {
+    const confirmDelete = confirm("¿Seguro que quieres eliminar este servicio?");
+
+    if (!confirmDelete) return;
+
+    await deleteServicio(id);
+    await loadServicios();
+  };
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#0a1628] text-white">
+        <div className="rounded-[2rem] border border-[#009B8D]/15 bg-[#0f2744] p-8 text-center shadow-2xl">
+          <div className="mx-auto mb-4 h-12 w-12 animate-pulse rounded-2xl bg-[#009B8D]/20" />
+
+          <p className="font-semibold text-slate-400">
+            Cargando servicios...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#0a1628] text-white">
+      <header className="border-b border-[#009B8D]/10 bg-[#08111f] px-4 py-5 sm:px-6">
+        <div className="mx-auto flex max-w-[1760px] flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-[#009B8D]">
+              Panel administrativo
+            </p>
+
+            <h1 className="mt-1 text-3xl font-black md:text-4xl">
+              Servicios
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+              Administra los servicios visibles de la web pública, su orden,
+              estado, beneficios, destacado y enlace individual.
+            </p>
+
+            <p className="mt-2 wrap-anywhere text-xs text-slate-500">
+              Sesión iniciada como {user?.email}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/admin/dashboard"
+              className="rounded-2xl border border-white/10 px-5 py-3 text-center text-sm font-black text-white transition hover:bg-white/5"
+            >
+              Volver al dashboard
+            </Link>
+
+            <Link
+              href="/admin/servicios/nuevo"
+              className="rounded-2xl bg-[#009B8D] px-5 py-3 text-center text-sm font-black text-white transition hover:bg-[#00877a]"
+            >
+              Crear servicio
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <section className="px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-[1760px]">
+          <div className="mb-6 grid gap-4 md:grid-cols-4">
+            <StatCard label="Total servicios" value={String(servicios.length)} />
+            <StatCard label="Activos" value={String(totalActive)} />
+            <StatCard label="Inactivos" value={String(totalInactive)} />
+            <StatCard label="Destacados" value={String(totalFeatured)} />
+          </div>
+
+          {sortedServicios.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="grid gap-5">
+              {sortedServicios.map((servicio) => {
+                const isActive = Boolean(servicio.active);
+                const isFeatured = Boolean(servicio.featured);
+                const benefits = servicio.benefits || [];
+
+                return (
+                  <article
+                    key={servicio.id}
+                    className="overflow-hidden rounded-[2rem] border border-[#009B8D]/15 bg-[#0f2744] shadow-[0_24px_80px_rgba(0,0,0,0.16)] transition hover:border-[#009B8D]/35"
+                  >
+                    <div className="grid gap-0 xl:grid-cols-[260px_1fr]">
+                      <div className="bg-[#08111f] p-4">
+                        <Link
+                          href={`/admin/servicios/editar/${servicio.id}`}
+                          className="group block h-full"
+                        >
+                          <div className="relative flex min-h-[220px] items-center justify-center overflow-hidden rounded-[1.5rem] border border-white/10 bg-linear-to-br from-[#0a1628] to-[#10243d]">
+                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,155,141,0.22),transparent_45%)]" />
+
+                            <div className="relative flex h-28 w-28 items-center justify-center rounded-[2rem] border border-[#009B8D]/25 bg-[#009B8D]/10 text-6xl shadow-[0_20px_70px_rgba(0,155,141,0.12)] transition duration-500 group-hover:scale-105">
+                              {servicio.icon || "◈"}
+                            </div>
+
+                            <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-black ${
+                                  isActive
+                                    ? "bg-[#009B8D]/90 text-white"
+                                    : "bg-white/10 text-slate-200 backdrop-blur"
+                                }`}
+                              >
+                                {isActive ? "Activo" : "Inactivo"}
+                              </span>
+
+                              {isFeatured && (
+                                <span className="rounded-full border border-[#009B8D]/25 bg-[#08111f]/85 px-3 py-1 text-xs font-black text-[#20d6c7] backdrop-blur">
+                                  Destacado
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="absolute bottom-3 left-3 right-3">
+                              <span className="rounded-full border border-white/10 bg-[#08111f]/85 px-3 py-1 text-xs font-bold text-slate-200 backdrop-blur">
+                                Orden {servicio.order || 0}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+
+                      <div className="p-5 sm:p-6">
+                        <div className="grid gap-5 xl:grid-cols-[1fr_auto] xl:items-start">
+                          <div className="min-w-0">
+                            <div className="mb-3 flex flex-wrap gap-2">
+                              <span className="rounded-full bg-[#009B8D]/15 px-3 py-1 text-xs font-black text-[#20d6c7]">
+                                Orden {servicio.order || 0}
+                              </span>
+
+                              <span
+                                className={`rounded-full border px-3 py-1 text-xs font-black ${
+                                  isActive
+                                    ? "border-[#009B8D]/25 bg-[#009B8D]/10 text-[#20d6c7]"
+                                    : "border-white/10 bg-white/5 text-slate-400"
+                                }`}
+                              >
+                                {isActive ? "Activo" : "Inactivo"}
+                              </span>
+
+                              <span
+                                className={`rounded-full border px-3 py-1 text-xs font-black ${
+                                  isFeatured
+                                    ? "border-[#009B8D]/25 bg-[#009B8D]/10 text-[#20d6c7]"
+                                    : "border-white/10 bg-white/5 text-slate-400"
+                                }`}
+                              >
+                                {isFeatured ? "Destacado" : "Normal"}
+                              </span>
+
+                              <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-500">
+                                {benefits.length} beneficios
+                              </span>
+                            </div>
+
+                            <h2 className="mb-2 wrap-anywhere text-2xl font-black leading-tight text-white">
+                              {servicio.title}
+                            </h2>
+
+                            <p className="mb-4 wrap-anywhere text-sm font-semibold text-slate-500">
+                              /servicios/{servicio.slug}
+                            </p>
+
+                            <p className="mb-5 max-w-4xl wrap-anywhere leading-7 text-slate-400">
+                              {servicio.shortDescription ||
+                                "Sin descripción breve."}
+                            </p>
+
+                            <div className="grid gap-3 rounded-[1.5rem] border border-white/10 bg-[#08111f]/70 p-4 text-sm md:grid-cols-[180px_1fr]">
+                              <SmallInfo
+                                label="Icono"
+                                value={servicio.icon || "Sin icono"}
+                              />
+
+                              <SmallInfo
+                                label="Beneficios principales"
+                                value={
+                                  benefits.length > 0
+                                    ? benefits.slice(0, 4).join(" · ")
+                                    : "Sin beneficios registrados"
+                                }
+                              />
+                            </div>
+
+                            {benefits.length > 0 && (
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {benefits.slice(0, 6).map((benefit, index) => (
+                                  <span
+                                    key={`${benefit}-${index}`}
+                                    className="rounded-full border border-[#009B8D]/20 bg-[#009B8D]/10 px-3 py-1 text-xs font-semibold text-[#20d6c7]"
+                                  >
+                                    {benefit}
+                                  </span>
+                                ))}
+
+                                {benefits.length > 6 && (
+                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-500">
+                                    +{benefits.length - 6} más
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex shrink-0 flex-col gap-3 sm:flex-row xl:flex-col">
+                            <Link
+                              href={`/admin/servicios/editar/${servicio.id}`}
+                              className="rounded-2xl border border-[#009B8D]/30 px-5 py-3 text-center text-sm font-black text-white transition hover:bg-[#009B8D]/10"
+                            >
+                              Editar
+                            </Link>
+
+                            {isActive && (
+                              <Link
+                                href={`/servicios/${servicio.slug}`}
+                                target="_blank"
+                                className="rounded-2xl border border-white/10 px-5 py-3 text-center text-sm font-black text-slate-200 transition hover:bg-white/5 hover:text-white"
+                              >
+                                Ver público
+                              </Link>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(servicio.id)}
+                              className="rounded-2xl border border-red-500/30 px-5 py-3 text-sm font-black text-red-200 transition hover:bg-red-500/10"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-[#009B8D]/15 bg-[#0f2744] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.16)]">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-2 text-3xl font-black text-white">{value}</p>
+    </div>
+  );
+}
+
+function SmallInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="line-clamp-2 wrap-anywhere font-semibold text-slate-200">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-[2rem] border border-[#009B8D]/15 bg-[#0f2744] p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.22)]">
+      <h2 className="mb-2 text-2xl font-black">No hay servicios todavía</h2>
+
+      <p className="mb-6 text-slate-400">
+        Crea el primer servicio para mostrarlo en la web pública.
+      </p>
+
+      <Link
+        href="/admin/servicios/nuevo"
+        className="inline-flex rounded-2xl bg-[#009B8D] px-5 py-3 font-black text-white transition hover:bg-[#00877a]"
+      >
+        Crear servicio
+      </Link>
+    </div>
+  );
+}
