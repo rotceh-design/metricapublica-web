@@ -423,7 +423,7 @@ export default function NuevoEstudioPage() {
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-5 py-3 text-sm font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save size={17} />
-          {loading ? "Guardando..." : "Guardar"}
+          {loading ? "Subiendo..." : "Subir estudio"}
         </button>
       }
     >
@@ -517,7 +517,7 @@ export default function NuevoEstudioPage() {
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-5 py-4 text-sm font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save size={17} />
-            {loading ? "Guardando..." : "Guardar estudio"}
+            {loading ? "Subiendo..." : "Subir estudio"}
           </button>
         </div>
       </form>

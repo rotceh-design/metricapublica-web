@@ -470,7 +470,7 @@ export default function EditarEstudioPage() {
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-5 py-3 text-sm font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save size={17} />
-          {saving ? "Guardando..." : "Guardar"}
+          {saving ? "Subiendo..." : "Subir"}
         </button>
       }
     >
@@ -564,7 +564,7 @@ export default function EditarEstudioPage() {
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#009B8D] px-5 py-4 text-sm font-black text-white transition hover:bg-[#00877a] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save size={17} />
-            {saving ? "Guardando..." : "Guardar estudio"}
+            {saving ? "Subiendo..." : "Subir estudio"}
           </button>
         </div>
       </form>
